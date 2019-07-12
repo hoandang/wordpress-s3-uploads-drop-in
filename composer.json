@@ -1,6 +1,5 @@
 {
   "name": "hoandang/wordpress-s3-uploads-drop-in",
-  "license": "MIT",
   "description": "Wordpress S3 Uploads Drop In",
   "homepage": "https://github.com/hoandang/wordpress-s3-uploads-drop-in",
   "authors": [
@@ -16,8 +15,5 @@
   "require": {
     "php": ">=7",
     "aws/aws-sdk-php": "^3.87"
-  },
-  "autoload": {
-    "files": ["wordpress-s3-uploads-drop-in.php"]
   }
 }
