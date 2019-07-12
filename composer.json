@@ -9,6 +9,7 @@
       "email": "danghuyhoan@gmail.com"
     }
   ], 
+  "type": "wordpress-plugin",
   "keywords": [
     "wordpress aws s3 uploads"
   ],
