@@ -17,6 +17,6 @@
     "aws/aws-sdk-php": "^3.87"
   },
   "autoload": {
-    "files": ["wordpress-s3-uploads-drop-in"]
+    "files": ["wordpress-s3-uploads-drop-in.php"]
   }
 }
