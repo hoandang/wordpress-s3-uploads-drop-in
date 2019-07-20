@@ -41,7 +41,7 @@ class S3Uploads
   private function initS3Client()
   {
     $config = [
-      'region' => 'ap-southeast-2',
+      'region' => getenv('AWS_S3_REGION'),
       'version' => 'latest'
     ];
 
@@ -88,12 +88,12 @@ class S3Uploads
     $attachments = array_map(function($attachment) 
     {
       $seperators = explode('uploads', $attachment);
-      return getenv('SLAVE_ID') . end($seperators);
+      return getenv('AWS_S3_PATH') . end($seperators);
     }, array_merge(
       [$this->attachmentMainPath($attachmentId)],
       $this->attachmentOtherPaths($attachmentId)
     ));
-
+    
     $this->s3Client->deleteObjects([
       'Bucket' => getenv('AWS_S3_BUCKET'),
       'Delete' => [
@@ -108,8 +108,8 @@ class S3Uploads
   public function uploadToS3($path)
   {
     $source = fopen($path, 'rb');
-    $filename = $this->filename($path);
-    $key = getenv('SLAVE_ID') . wp_get_upload_dir()['subdir'] . "/$filename";
+    $filename = basename($path);
+    $key =  getenv('AWS_S3_PATH') . wp_get_upload_dir()['subdir'] . "/$filename";
     $uploader = new ObjectUploader(
       $this->s3Client,
       getenv('AWS_S3_BUCKET'),
@@ -117,6 +117,16 @@ class S3Uploads
       $source
     );
     $uploader->upload();
+  }
+
+  private function attachmentLocation($attachmentId)
+  {
+    $attachmentMainPath = $this->attachmentMainPath($attachmentId);
+    $pathInfo = pathinfo($attachmentMainPath);
+    $dirname = explode('/', $pathInfo['dirname']);
+    $year = $dirname[count($dirname) - 2];
+    $month = $dirname[count($dirname) - 1];
+    return "uploads/$year/$month";
   }
 
   private function attachmentMainPath($attachmentId)
@@ -129,23 +139,18 @@ class S3Uploads
     return array_filter(array_map(function($size) use($attachmentId) 
     {
       $sizeInfo = image_get_intermediate_size($attachmentId, $size);
-      return $this->attachmentPath($sizeInfo);
+      $attachmentLocation = $this->attachmentLocation($attachmentId);
+      return isset($sizeInfo['file']) ? $attachmentLocation . '/' . $sizeInfo['file'] : null;
     }, $this->sizes($attachmentId)));
   }
 
   private function attachmentPath($sizeInfo)
   {
-    return isset($sizeInfo['file']) ? (wp_get_upload_dir()['path'] . '/' . $sizeInfo['file']) : null;
+    return isset($sizeInfo['file']) ? wp_get_upload_dir()['path'] . '/' . $sizeInfo['file'] : null;
   }
 
   private function sizes($attachmentId)
   {
     return array_keys(wp_get_attachment_metadata($attachmentId)['sizes'] ?? []); 
   }
-
-  private function filename($path)
-  {
-    return basename($path);
-  }
 }
-
