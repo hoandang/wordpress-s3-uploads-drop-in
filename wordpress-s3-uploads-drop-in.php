@@ -1,7 +1,7 @@
 <?php
 /*
   Plugin Name: S3 Uploads DropIn
-  Version: 1.5
+  Version: 1.6
 */
 
 if ( ! defined( 'ABSPATH' ) ) exit;
