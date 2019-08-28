@@ -68,9 +68,10 @@ class S3Uploads
   {
     $sizes = $attachmentData['sizes'] ?? []; 
     $paths = array_filter(array_map([$this, 'attachmentPath'], $sizes));
+    $main_path = $this->attachmentMainPath($attachmentId);
 
     $attachments = array_values(array_merge(
-      [$this->attachmentMainPath($attachmentId)],
+      [$main_path],
       $paths
     ));
 
@@ -80,6 +81,7 @@ class S3Uploads
       @unlink($attachment);
     }
 
+    $attachmentData['file'] = ltrim(wp_get_upload_dir()['subdir'], '/') . '.' . basename($main_path);
     return $attachmentData;
   }
 
