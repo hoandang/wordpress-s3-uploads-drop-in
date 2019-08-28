@@ -66,11 +66,19 @@ class S3Uploads
 
   public function onUpdatedAttachment($attachmentData, $attachmentId)
   {
+    $attachmentMainPath = $this->attachmentMainPath($attachmentId);
     $sizes = $attachmentData['sizes'] ?? []; 
-    $paths = array_filter(array_map([$this, 'attachmentPath'], $sizes));
+    $paths = [];
+    foreach($sizes as $size)
+    {
+      if ($path = $this->attachmentPath($size, $attachmentMainPath))
+      {
+        $paths[] = $path;
+      }
+    }
 
     $attachments = array_values(array_merge(
-      [$this->attachmentMainPath($attachmentId)],
+      [$attachmentMainPath],
       $paths
     ));
 
@@ -109,7 +117,8 @@ class S3Uploads
   {
     $source = fopen($path, 'rb');
     $filename = basename($path);
-    $key =  getenv('AWS_S3_PATH') . wp_get_upload_dir()['subdir'] . "/$filename";
+    $time = $this->attachmentTime($path);
+    $key =  getenv('AWS_S3_PATH') . "/$time/$filename";
     $uploader = new ObjectUploader(
       $this->s3Client,
       getenv('AWS_S3_BUCKET'),
@@ -119,14 +128,20 @@ class S3Uploads
     $uploader->upload();
   }
 
-  private function attachmentLocation($attachmentId)
+  private function attachmentTime($path)
   {
-    $attachmentMainPath = $this->attachmentMainPath($attachmentId);
-    $pathInfo = pathinfo($attachmentMainPath);
+    $pathInfo = pathinfo($path);
     $dirname = explode('/', $pathInfo['dirname']);
     $year = $dirname[count($dirname) - 2];
     $month = $dirname[count($dirname) - 1];
-    return "uploads/$year/$month";
+    return "$year/$month";
+  }
+
+  private function attachmentLocation($attachmentId)
+  {
+    $attachmentMainPath = $this->attachmentMainPath($attachmentId);
+    $time = $this->attachmentTime($attachmentMainPath);
+    return "uploads/$time";
   }
 
   private function attachmentMainPath($attachmentId)
@@ -144,9 +159,11 @@ class S3Uploads
     }, $this->sizes($attachmentId)));
   }
 
-  private function attachmentPath($sizeInfo)
+  private function attachmentPath($sizeInfo, $mainPath)
   {
-    return isset($sizeInfo['file']) ? wp_get_upload_dir()['path'] . '/' . $sizeInfo['file'] : null;
+    $basedir = wp_get_upload_dir()['basedir'];
+    $time = $this->attachmentTime($mainPath);
+    return isset($sizeInfo['file']) ? "$basedir/$time/" . $sizeInfo['file'] : null;
   }
 
   private function sizes($attachmentId)
