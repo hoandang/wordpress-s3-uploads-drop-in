@@ -46,7 +46,7 @@ class S3Uploads
 
   public function filterUploadDir($dirs)
   {
-    $dirs['url'] = $_ENV['AWS_S3_BUCKET_URL'] . '/' . $dirs['subdir'];
+    $dirs['url'] = $_ENV['AWS_S3_BUCKET_URL'] . $dirs['subdir'];
     $dirs['baseurl'] = $_ENV['AWS_S3_BUCKET_URL'];
     return $dirs;
   }
