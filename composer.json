@@ -14,7 +14,7 @@
     "wordpress aws s3 uploads"
   ],
   "require": {
-    "php": ">=7",
-    "aws/aws-sdk-php": "^3.87"
+    "php": ">=8",
+    "aws/aws-sdk-php": "^3.263"
   }
 }

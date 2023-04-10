@@ -1,8 +1,10 @@
 <?php
 /*
   Plugin Name: S3 Uploads DropIn
-  Version: 1.6
-*/
+  Description: Upload file from media gallery to S3
+  Version: 1
+  Author: Hoan
+ */
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
@@ -15,10 +17,6 @@ add_action('plugins_loaded', [S3Uploads::get_instance(), 'init']);
 // A little singleton
 class S3Uploads 
 {
-  protected function __construct() { }
-  protected function __wakeup() { }
-  protected function __clone() { }
-
   public static function get_instance()
   {
     static $instance = null;
@@ -40,27 +38,16 @@ class S3Uploads
 
   private function initS3Client()
   {
-    $config = [
-      'region' => getenv('AWS_S3_REGION'),
-      'version' => 'latest'
-    ];
-
-    if (getenv('AWS_ACCESS_KEY_ID') && getenv('AWS_SECRET_ACCESS_KEY'))
-    {
-      $config = array_merge($config, [
-        'credentials' => [
-          'key' => getenv('AWS_ACCESS_KEY_ID'),
-          'secret' => getenv('AWS_SECRET_ACCESS_KEY')
-        ]
-      ]);
-    }
-    $this->s3Client = S3Client::factory($config);
+    $this->s3Client = S3Client::factory([
+      'region' => $_ENV['AWS_DEFAULT_REGION'],
+      'version' => 'latest',
+    ]);
   }
 
   public function filterUploadDir($dirs)
   {
-    $dirs['url'] = getenv('AWS_S3_BUCKET_URL') . '/' . $dirs['subdir'];
-    $dirs['baseurl'] = getenv('AWS_S3_BUCKET_URL');
+    $dirs['url'] = $_ENV['AWS_S3_BUCKET_URL'] . '/' . $dirs['subdir'];
+    $dirs['baseurl'] = $_ENV['AWS_S3_BUCKET_URL'];
     return $dirs;
   }
 
@@ -85,7 +72,6 @@ class S3Uploads
     foreach($attachments as $attachment)
     {
       $this->uploadToS3($attachment);
-      @unlink($attachment);
     }
 
     return $attachmentData;
@@ -96,32 +82,32 @@ class S3Uploads
     $attachments = array_map(function($attachment) 
     {
       $seperators = explode('uploads', $attachment);
-      return getenv('AWS_S3_PATH') . end($seperators);
+      return $_ENV['AWS_S3_PATH'] . end($seperators);
     }, array_merge(
       [$this->attachmentMainPath($attachmentId)],
       $this->attachmentOtherPaths($attachmentId)
     ));
-    
+
     $this->s3Client->deleteObjects([
-      'Bucket' => getenv('AWS_S3_BUCKET'),
+      'Bucket' => $_ENV['AWS_S3_BUCKET'],
       'Delete' => [
         'Objects' => array_map(function($key) 
         {
-            return ['Key' => $key];
+          return ['Key' => $key];
         }, $attachments)
       ]
     ]);
   }
 
-  public function uploadToS3($path)
+  private function uploadToS3($path)
   {
     $source = fopen($path, 'rb');
     $filename = basename($path);
     $time = $this->attachmentTime($path);
-    $key =  getenv('AWS_S3_PATH') . "/$time/$filename";
+    $key =  $_ENV['AWS_S3_PATH'] . "/$time/$filename";
     $uploader = new ObjectUploader(
       $this->s3Client,
-      getenv('AWS_S3_BUCKET'),
+      $_ENV['AWS_S3_BUCKET'],
       $key,
       $source
     );
